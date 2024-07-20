@@ -1,9 +1,9 @@
 /*
  * TODOS:
- * - Add WM_USER processing
- * - Do not close console window when main
- *       window closes
+ * - Fix positioning with top/right/left taskbar
+ * - Better way to wait for console to close
  */
+
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <Windows.h>
@@ -18,9 +18,9 @@ LRESULT wndProc(
     LPARAM lParam
 )
 {
-    // Assume we have handled the message
     LRESULT result = 0;
 
+    // Print information about the message
     WindowMessage message = getMessage(msg);
     assert(msg == message.id);
     wprintf(
@@ -31,21 +31,21 @@ LRESULT wndProc(
 
     switch (msg)
     {
-        case WM_DESTROY:
-        {
-            PostQuitMessage(0);
-            break;
-        }
-        default:
-        {
-            result = DefWindowProcW(
-                hWnd,
-                msg,
-                wParam,
-                lParam
-            );
-            break;
-        }
+    case WM_DESTROY:
+    {
+        PostQuitMessage(0);
+        break;
+    }
+    default:
+    {
+        result = DefWindowProcW(
+            hWnd,
+            msg,
+            wParam,
+            lParam
+        );
+        break;
+    }
     }
     return result;
 }
@@ -57,26 +57,45 @@ int CALLBACK wWinMain(
     _In_ int nCmdShow
 )
 {
-    HWND hWndDesktop = GetDesktopWindow();
-    RECT desktopRect;
-    GetWindowRect(hWndDesktop, &desktopRect);
-    POINT desktopWidth = 
-    { 
-        desktopRect.top,
-        desktopRect.bottom 
-    };
-    ScreenToClient(
-        hWndDesktop,
-        &desktopWidth
+    // Get work area (size excluding taskbar)
+    RECT workAreaRect;
+    SystemParametersInfoW(
+        SPI_GETWORKAREA,
+        0,
+        &workAreaRect,
+        0
     );
-    
+    int workAreaWidth = workAreaRect.right;
+    int workAreaHeight = workAreaRect.bottom;
 
-    // Window stuff
+    // Get screen size
+    int screenWidth =
+        GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight =
+        GetSystemMetrics(SM_CYSCREEN);
+
+    // Calculate window positions
+    int consoleHeight = workAreaHeight;
+    int consoleWidth = 300;
+
+    int windowSize = 400;
+    int remainingWorkAreaWidth =
+        workAreaWidth - consoleWidth;
+    int windowX =
+        (remainingWorkAreaWidth / 2) +
+        consoleWidth -
+        (windowSize / 2);
+    int windowY =
+        (workAreaHeight / 2) -
+        (windowSize / 2);
+
+    // Initialize window
     WNDCLASSW wndClass = { 0 };
     wndClass.lpfnWndProc = wndProc;
     wndClass.hInstance = hInstance;
-    wndClass.lpszClassName = L"VisibilityJam";
-    wndClass.hbrBackground = 
+    wndClass.lpszClassName =
+        L"VisibilityJam";
+    wndClass.hbrBackground =
         GetStockObject(WHITE_BRUSH);
 
     RegisterClassW(&wndClass);
@@ -86,52 +105,62 @@ int CALLBACK wWinMain(
         wndClass.lpszClassName,
         L"Visibility Jam",
         WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        500,
-        500,
+        windowX,
+        windowY,
+        windowSize,
+        windowSize,
         NULL,
         NULL,
         hInstance,
         NULL
     );
 
-    // Console stuff
+    ShowWindow(
+        hWnd,
+        nCmdShow
+    );
+
+    // Initialize console
     BOOL result = AllocConsole();
     assert(result);
 
     // Redirect STDOUT to our console
     FILE* fresult = freopen(
-        "CONOUT$", 
-        "w", 
+        "CONOUT$",
+        "w",
         stdout
     );
     assert(fresult);
 
+    // Position console
     SetWindowPos(
-        GetConsoleWindow(), 
-        HWND_TOPMOST, 
+        GetConsoleWindow(),
+        hWnd,
         0,
-        0, 
-        300, 
-        300, //desktopWidth.x - desktopWidth.y,
+        0,
+        consoleWidth,
+        consoleHeight,
         0
     );
 
-    ShowWindow(
-        hWnd, 
-        nCmdShow
-    );
-
     // Message loop
+    // This is deliberately broken because we 
+    // do not want the program to exit when the
+    // window is closed, only when the console
+    // closes
     MSG msg;
-    while (GetMessageW(&msg, NULL, 0, 0) > 0)
+    while (1)
     {
-        TranslateMessage(&msg);
-        DispatchMessageW(&msg);
+        result = GetMessageW(
+            &msg,
+            NULL,
+            0,
+            0
+        );
+        if (result > 0)
+        {
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
     }
-
-    // Wait for user to close the console
-    while (GetConsoleWindow() != NULL)
-    { }
 }
