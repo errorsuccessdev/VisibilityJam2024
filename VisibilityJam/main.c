@@ -1,6 +1,6 @@
 /*
  * TODOS:
- * - Fix positioning with top/right/left taskbar
+ * - Fix positioning with top taskbar
  * - Better way to wait for console to close
  */
 
@@ -31,21 +31,21 @@ LRESULT wndProc(
 
     switch (msg)
     {
-    case WM_DESTROY:
-    {
-        PostQuitMessage(0);
-        break;
-    }
-    default:
-    {
-        result = DefWindowProcW(
-            hWnd,
-            msg,
-            wParam,
-            lParam
-        );
-        break;
-    }
+        case WM_DESTROY:
+        {
+            PostQuitMessage(0);
+            break;
+        }
+        default:
+        {
+            result = DefWindowProcW(
+                hWnd,
+                msg,
+                wParam,
+                lParam
+            );
+            break;
+        }
     }
     return result;
 }
@@ -77,6 +77,8 @@ int CALLBACK wWinMain(
     // Calculate window positions
     int consoleHeight = workAreaHeight;
     int consoleWidth = 300;
+    int consoleX = workAreaRect.left;
+    int consoleY = workAreaRect.top;
 
     int windowSize = 400;
     int remainingWorkAreaWidth =
@@ -88,6 +90,12 @@ int CALLBACK wWinMain(
     int windowY =
         (workAreaHeight / 2) -
         (windowSize / 2);
+
+    // Move cursor to starting position
+    int cursorX = consoleWidth +
+        ((windowX - consoleWidth) / 2);
+    int cursorY = workAreaHeight / 2;
+    SetCursorPos(cursorX, cursorY);
 
     // Initialize window
     WNDCLASSW wndClass = { 0 };
@@ -136,8 +144,8 @@ int CALLBACK wWinMain(
     SetWindowPos(
         GetConsoleWindow(),
         hWnd,
-        0,
-        0,
+        consoleX,
+        consoleY,
         consoleWidth,
         consoleHeight,
         0
