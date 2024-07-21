@@ -1,1 +1,6 @@
-# VisibilityJam
+# WM_SHOWWINDOW: Window Message Viewer
+A window into how windows work in Windows.
+## Made for the Handmade Network's Visibility Jam 2024
+This project was created over a weekend on a very limited timetable. I would not consider it finished, but I am releasing it as it is the end of the jam. While other obligations meant I didn't have too much time to work on it, I found that I ran into a lot of challenges along the way, most remain unsolved. I had some trouble with the window positioning (console positioning with a top-positioned taskbar is still broken). The most troublesome issue was the lag I experienced. It's present in the console version on the master branch, but becomes particularly obtuse with the edit control version on the add-log-window branch. I experimented with a few things to reduce this lag (reusing the same wndproc, altering when the logging takes place), but to no avail. 
+
+I would be lying if I said I was happy with how this turned out, but releasing nothing doesn't feel right, either. Therefore, I've decided to release the code and a build of the master branch "as is". While I did not come away with a nice way to view window messages, I did gain an appreciation for just *how much* is going on behind the scenes every time basically anything happens in the GUI, and how easy it is to encounter lag and problems if the saber dance taking place inside your wndproc isn't perfectly performed. 
